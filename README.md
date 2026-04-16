@@ -1,4 +1,4 @@
-# 🤖 AI Data Analyst
+#  AI Data Analyst
 
 > Upload any CSV. Ask questions in plain English. Get instant AI-powered insights, auto-generated charts, and ML model comparisons — all in your browser.
 
@@ -10,7 +10,7 @@
 
 ---
 
-## ✨ Features
+##  Features
 
 | Feature | Description |
 |---|---|
@@ -24,7 +24,7 @@
 
 ## 🚀 Live Demo
 
-> 🔗 **[Try it live on Streamlit Cloud](#)** ← *(deploy and paste link here)*
+> 🔗 **[Try it live on Streamlit Cloud]** ← *https://ml-model-select.streamlit.app/*
 
 ---
 
@@ -49,7 +49,7 @@ ML-model-selector/
 │   ├── visualizer.py        # Interactive Plotly chart builder
 │   └── ml_trainer.py        # Multi-model training & cross-validation
 ├── requirements.txt
-├── .env.example
+├── .env
 ├── .gitignore
 └── README.md
 ```
@@ -88,20 +88,11 @@ Open [http://localhost:8501](http://localhost:8501) in your browser.
 
 ---
 
-## 🌐 Deploy to Streamlit Cloud (Free)
-
-1. Push this repo to GitHub
-2. Go to [share.streamlit.io](https://share.streamlit.io) → New app
-3. Connect your repo, set `app.py` as the entry point
-4. Add `OPENAI_API_KEY` under **Settings → Secrets**
-5. Deploy — you get a public URL instantly
-
----
 
 ## 💡 How It Works
 
 ### Chat with Your Data
-The dataset is profiled on upload (shape, dtypes, describe stats, sample rows). This profile is injected into the LLM's system prompt as structured context. Every user question is answered grounded in that context — no hallucination risk on column names or statistics.
+The dataset is profiled on upload (shape, dtypes, describe stats, sample rows). This profile is injected into the LLM's system prompt as structured context. Every user question is answered grounded in that context, no hallucination risk on column names or statistics.
 
 ### ML Training
 Models are wrapped in a `Pipeline` with `SimpleImputer` → `StandardScaler` → model. All models are evaluated with **5-fold cross-validation**, so results are robust even on small datasets. Results are ranked and visualized in an interactive bar chart.
@@ -117,10 +108,3 @@ Models are wrapped in a `Pipeline` with `SimpleImputer` → `StandardScaler` →
 - [ ] Deploy as Docker container
 
 ---
-
-## 🙋 About
-
-Built by **Eleni** as part of an AI engineering portfolio.  
-Feedback, issues, and PRs are welcome.
-
-[![GitHub](https://img.shields.io/badge/GitHub-Elfer09-black?logo=github)](https://github.com/Elfer09)
