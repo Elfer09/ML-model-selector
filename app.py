@@ -1,3 +1,4 @@
+import pandas as pd
 import streamlit as st
 from modules.data_processor import load_and_profile
 from modules.llm_analyst import ask_llm
@@ -128,7 +129,21 @@ elif app_mode == "🤖 Train ML Models":
     st.subheader("Train & Compare ML Models")
 
     numeric_cols = df.select_dtypes(include="number").columns.tolist()
-    categorical_cols = df.select_dtypes(include=["object", "category"]).columns.tolist()
+
+    # True categorical columns: string-like dtype where <80% of values look numeric.
+    # Uses pd.api.types.is_string_dtype() to handle both legacy object dtype and
+    # newer pandas StringDtype (pandas 2.2+). Excludes columns like 'horsepower'
+    # that are strings only because of missing value markers (e.g. "?") in the CSV.
+    def _is_true_categorical(col):
+        if not (pd.api.types.is_string_dtype(df[col]) or df[col].dtype == "category"):
+            return False
+        n_valid = df[col].notna().sum()
+        if n_valid == 0:
+            return False
+        pct_numeric = pd.to_numeric(df[col], errors="coerce").notna().sum() / n_valid
+        return pct_numeric < 0.8
+
+    categorical_cols = [c for c in df.columns if _is_true_categorical(c)]
 
     col_left, col_right = st.columns(2)
     with col_left:
@@ -140,14 +155,11 @@ elif app_mode == "🤖 Train ML Models":
                 st.stop()
             target_options = numeric_cols
         else:
-            # For classification: categorical cols + numeric cols with ≤20 unique values
-            # (excludes continuous columns like age/salary that are regression targets)
-            discrete_numeric_cols = [
-                c for c in numeric_cols if df[c].nunique() <= 20
-            ]
-            target_options = categorical_cols + discrete_numeric_cols
+            # Classification targets must be string/categorical columns (dtype=object)
+            # Numeric columns are continuous and belong to regression only
+            target_options = categorical_cols
             if not target_options:
-                st.error("No suitable classification target found. All numeric columns are continuous — try Regression instead.")
+                st.error("No categorical columns found for classification. All columns are numeric — try Regression instead.")
                 st.stop()
         target = st.selectbox("Target Column (what to predict)", target_options)
 
