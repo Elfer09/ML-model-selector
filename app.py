@@ -58,7 +58,7 @@ with st.expander("Statistical Summary", expanded=False):
 st.divider()
 
 # Mode: Chat with Your Data 
-if app_mode == "Chat with Your Data":
+if app_mode == "🔍 Chat with Your Data":
     st.subheader("Chat with Your Data")
 
     if not api_key:
@@ -118,13 +118,13 @@ if app_mode == "Chat with Your Data":
             st.rerun()
 
 # Mode: Auto Visualize 
-elif app_mode == "Auto Visualize":
+elif app_mode == "📊 Auto Visualize":
     st.subheader("Auto Visualize")
     st.caption("Select columns and chart type. Charts are generated automatically.")
     auto_charts(df)
 
 # Mode: Train ML Models
-elif app_mode == "Train ML Models":
+elif app_mode == "🤖 Train ML Models":
     st.subheader("Train & Compare ML Models")
 
     numeric_cols = df.select_dtypes(include="number").columns.tolist()
