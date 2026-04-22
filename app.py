@@ -140,10 +140,14 @@ elif app_mode == "🤖 Train ML Models":
                 st.stop()
             target_options = numeric_cols
         else:
-            # Categorical columns are the natural choice for classification targets
-            target_options = categorical_cols + numeric_cols
+            # For classification: categorical cols + numeric cols with ≤20 unique values
+            # (excludes continuous columns like age/salary that are regression targets)
+            discrete_numeric_cols = [
+                c for c in numeric_cols if df[c].nunique() <= 20
+            ]
+            target_options = categorical_cols + discrete_numeric_cols
             if not target_options:
-                st.error("No columns available as a classification target.")
+                st.error("No suitable classification target found. All numeric columns are continuous — try Regression instead.")
                 st.stop()
         target = st.selectbox("Target Column (what to predict)", target_options)
 
