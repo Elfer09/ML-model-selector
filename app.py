@@ -132,7 +132,7 @@ elif app_mode == "🤖 Train ML Models":
 
     # True categorical columns: string-like dtype where <80% of values look numeric.
     # Uses pd.api.types.is_string_dtype() to handle both legacy object dtype and
-    # newer pandas StringDtype (pandas 2.2+). Excludes columns like 'horsepower'
+    # newer pandas StringDtype (pandas 2.2+). 
     # that are strings only because of missing value markers (e.g. "?") in the CSV.
     def _is_true_categorical(col):
         if not (pd.api.types.is_string_dtype(df[col]) or df[col].dtype == "category"):
