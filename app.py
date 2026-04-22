@@ -1,36 +1,21 @@
-import os
 import streamlit as st
-import pandas as pd
-from dotenv import load_dotenv
 from modules.data_processor import load_and_profile
 from modules.llm_analyst import ask_llm
 from modules.visualizer import auto_charts
 from modules.ml_trainer import train_and_compare
 
-load_dotenv()  # loads .env locally; no-op on Streamlit Cloud
-
-# ── Page config ───────────────────────────────────────────────────────────────
+# Page config 
 st.set_page_config(
     page_title="AI Data Analyst",
-    page_icon="🤖",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-# ── Sidebar ───────────────────────────────────────────────────────────────────
+# Sidebar 
 with st.sidebar:
-    st.title("⚙️ Settings")
-    env_key = os.getenv("OPENAI_API_KEY", "")
-    api_key = st.text_input(
-        "OpenAI API Key",
-        value=env_key,
-        type="password",
-        placeholder="sk-..." if not env_key else "Loaded from environment ✓",
-    )
-    if env_key:
-        st.caption("✅ Key loaded from environment.")
-    else:
-        st.caption("Your key is never stored or sent anywhere except OpenAI's API.")
+    st.title("Settings")
+    api_key = st.text_input("OpenAI API Key", type="password", placeholder="sk-...")
+    st.caption("Your key is never stored or sent anywhere except OpenAI's API.")
     st.divider()
     st.markdown("**Mode**")
     app_mode = st.radio(
@@ -39,26 +24,23 @@ with st.sidebar:
         label_visibility="collapsed",
     )
     st.divider()
-    st.markdown(
-        "Built by [Eleni](https://github.com/Elfer09) · "
-        "[Source](https://github.com/Elfer09/ML-model-selector)"
-    )
+    
 
-# ── Header ────────────────────────────────────────────────────────────────────
-st.title("🤖 AI Data Analyst")
+# Header 
+st.title("AI Data Analyst")
 st.markdown(
     "Upload any CSV. Ask questions in plain English. Get instant ML-powered insights."
 )
 st.divider()
 
-# ── File Upload ───────────────────────────────────────────────────────────────
+# File Upload 
 uploaded_file = st.file_uploader("Upload your CSV file", type=["csv"])
 
 if uploaded_file is None:
-    st.info("👆 Upload a CSV to get started. No data? Try a dataset from [Kaggle](https://www.kaggle.com/datasets).")
+    st.info("Upload a CSV to get started. No data? Try a dataset from [Kaggle](https://www.kaggle.com/datasets).")
     st.stop()
 
-# ── Load + Profile ─────────────────────────────────────────────────────────────
+# Load + Profile 
 df, profile = load_and_profile(uploaded_file)
 
 col1, col2, col3, col4 = st.columns(4)
@@ -67,17 +49,17 @@ col2.metric("Columns", profile['cols'])
 col3.metric("Missing Values", f"{profile['missing_pct']:.1f}%")
 col4.metric("Numeric Columns", profile['numeric_cols'])
 
-with st.expander("📋 Preview Data (first 100 rows)", expanded=False):
+with st.expander("Preview Data (first 100 rows)", expanded=False):
     st.dataframe(df.head(100), use_container_width=True)
 
-with st.expander("📈 Statistical Summary", expanded=False):
+with st.expander("Statistical Summary", expanded=False):
     st.dataframe(df.describe(include="all").T, use_container_width=True)
 
 st.divider()
 
-# ── Mode: Chat with Your Data ──────────────────────────────────────────────────
-if app_mode == "🔍 Chat with Your Data":
-    st.subheader("🔍 Chat with Your Data")
+# Mode: Chat with Your Data 
+if app_mode == "Chat with Your Data":
+    st.subheader("Chat with Your Data")
 
     if not api_key:
         st.warning("Add your OpenAI API key in the sidebar to enable AI analysis.")
@@ -131,38 +113,74 @@ if app_mode == "🔍 Chat with Your Data":
         st.session_state.messages.append({"role": "assistant", "content": response})
 
     if st.session_state.messages:
-        if st.button("🗑️ Clear Chat"):
+        if st.button("Clear Chat"):
             st.session_state.messages = []
             st.rerun()
 
-# ── Mode: Auto Visualize ───────────────────────────────────────────────────────
-elif app_mode == "📊 Auto Visualize":
-    st.subheader("📊 Auto Visualize")
+# Mode: Auto Visualize 
+elif app_mode == "Auto Visualize":
+    st.subheader("Auto Visualize")
     st.caption("Select columns and chart type. Charts are generated automatically.")
     auto_charts(df)
 
-# ── Mode: Train ML Models ──────────────────────────────────────────────────────
-elif app_mode == "🤖 Train ML Models":
-    st.subheader("🤖 Train & Compare ML Models")
+# Mode: Train ML Models
+elif app_mode == "Train ML Models":
+    st.subheader("Train & Compare ML Models")
 
     numeric_cols = df.select_dtypes(include="number").columns.tolist()
-    if len(numeric_cols) < 2:
-        st.error("Need at least 2 numeric columns to train ML models.")
-        st.stop()
+    categorical_cols = df.select_dtypes(include=["object", "category"]).columns.tolist()
 
     col_left, col_right = st.columns(2)
     with col_left:
-        target = st.selectbox("🎯 Target Column (what to predict)", numeric_cols)
-    with col_right:
         task_type = st.radio("Task Type", ["Regression", "Classification"], horizontal=True)
+    with col_right:
+        if task_type == "Regression":
+            if len(numeric_cols) < 2:
+                st.error("Need at least 2 numeric columns for regression.")
+                st.stop()
+            target_options = numeric_cols
+        else:
+            # Categorical columns are the natural choice for classification targets
+            target_options = categorical_cols + numeric_cols
+            if not target_options:
+                st.error("No columns available as a classification target.")
+                st.stop()
+        target = st.selectbox("Target Column (what to predict)", target_options)
 
     features = [c for c in numeric_cols if c != target]
+    if not features:
+        st.error("Need at least 1 numeric feature column.")
+        st.stop()
     st.caption(f"Features used: `{', '.join(features)}`")
 
-    if st.button("🚀 Train All Models", type="primary", use_container_width=True):
-        with st.spinner("Training models... this may take a moment."):
-            results_df, best_model_name, fig = train_and_compare(df, features, target, task_type)
+    # Hyperparameter tuning toggle — default and help text adapt to dataset size
+    _n_rows = len(df)
+    if _n_rows <= 2_000:
+        _tune_default = True
+        _tune_help = f"Recommended — {_n_rows:,} rows is small enough for fast tuning."
+    elif _n_rows <= 10_000:
+        _tune_default = False
+        _tune_help = f"{_n_rows:,} rows — tuning will work but may take a minute or two."
+    else:
+        _tune_default = False
+        _tune_help = f"{_n_rows:,} rows — tuning may be very slow or time out. Not recommended."
 
-        st.success(f"✅ Best model: **{best_model_name}**")
-        st.plotly_chart(fig, use_container_width=True)
-        st.dataframe(results_df, use_container_width=True)
+    use_tuning = st.checkbox(
+        "Enable hyperparameter tuning (GridSearchCV)",
+        value=_tune_default,
+        help=_tune_help,
+    )
+
+    if st.button("Train All Models", type="primary", use_container_width=True):
+        try:
+            with st.spinner("Training models... this may take a moment."):
+                results_df, best_model_name, fig, train_warnings = train_and_compare(
+                    df, features, target, task_type, use_tuning=use_tuning
+                )
+            for w in train_warnings:
+                st.warning(w)
+            st.success(f"Best model: **{best_model_name}**")
+            st.plotly_chart(fig, use_container_width=True)
+            st.dataframe(results_df, use_container_width=True)
+        except ValueError as e:
+            st.error(f"Training failed: {e}")
